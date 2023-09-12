@@ -1,0 +1,189 @@
+<html>
+    <head>
+        <title>MPAT_V2</title>
+        <link rel="stylesheet" href="estilo.css">
+    </head>
+    <body>
+        <div class="div1">
+            <form name="form1" id="form1">
+                Longitud total de la malla [m]: 
+                <input type="text" name="long" value="24">
+                <br>
+                <br>
+                ancho total de la malla [m]:
+                <input type="text" name="anch" value="24">
+                <br>
+                <br>
+                Cantidad de hilos verticales:
+                <input type="text" name="hv" value="3">
+                <br>
+                <br>
+                Cantidad de hilos horizontales:
+                <input type="text" name="hh" value="3">
+                <br>
+                <br>
+                resistividad del terreno [ohm.m]:
+                <input type="text" name="resist" value="24">
+                <br>
+                <br>
+                espesor capa superior [m]
+                <input type="text" name="espsup" value="0.05">
+                <br>
+                <br>
+                Diametro del conductor de tierra [m]:
+                <input type="text" name="dim" value="0.012">
+                <br>
+                <br>
+                Resistividad de la capa superior [ohm.m]
+                <input type="text" name="resisup" value="2500">
+                <br>
+                <br>
+                Corriente de falla a tierra [A]:
+                <input type="text" name="i0" value="1000">
+                <br>
+                <br>
+                Tiempo permanencia de falla [s]:
+                <input type="text" name="ta" value="1">
+                <br>
+                <br>
+                <input class="b1" type="button" value="calcular" onclick="ini()">
+            </form>
+        </div>
+        <canvas class="canvas" id="miCanvas" width="800" height="800"></canvas>
+        <script>
+            function ini(){
+                cnv=document.getElementById("miCanvas");
+                ctx=cnv.getContext("2d");
+                
+                //------------------------------------------
+                // Variables de cálculo
+                
+                l=parseFloat(document.form1.long.value);
+                a=parseFloat(document.form1.anch.value);
+                ro=parseFloat(document.form1.resist.value);
+                e=parseFloat(document.form1.espsup.value);
+                rs=parseFloat(document.form1.resisup.value);
+                ik=parseFloat(document.form1.i0.value);
+                cv=parseFloat(document.form1.hv.value);
+                ch=parseFloat(document.form1.hh.value);
+                r=(parseFloat(document.form1.dim.value))/2;
+                tk=parseFloat(document.form1.ta.value);
+                //------------------------------------------
+                //valores iniciales de tensiones 
+                
+                ux=0;
+                uy=0;
+                
+                w=400/l;        //factor de escala
+                ld=l*w;         //largo del dibujo de malla
+                ad=a*w;         //alto del dibujo de malla
+                
+                dh=l/(cv-1);
+                dv=a/(ch-1);
+                
+                //longitud total de conductores
+                lt=ch*l+cv*a;
+                
+                //------------------------------------------
+                // Prepara para dibujar malla en canvas
+                // Color de dibujo de malla
+                ctx.strokeStyle="black";
+                
+                //dibujo de la malla
+                for(h=0;h<cv-1;h++){
+                    for(v=0;v<ch-1;v++){
+                        ctx.strokeRect(100+h*w*dh,100+v*w*dv,dh*w,dh*w);
+                    }
+                }
+                //------------------------------------------
+                
+                //------------------------------------------
+                /* 
+                Se arman dos matrices para almacenar los valores
+                de las coordenadas de hilos horizontales y verticales
+                */ 
+                //guarda coordenadas horizontales de hilos verticales
+                xv=new Array(cv);
+                for(x=0;x<cv;x++){
+                    xv[x]=dh*x;
+                }
+                
+                //guarda coordenadas verticales de hilos horizontales
+                yh=new Array(ch);
+                for(y=0;y<ch;y++){
+                    yh[y]=dv*y;
+                }
+                //------------------------------------------
+                
+                //------------------------------------------
+                /*
+                calculo de tensiones
+                */
+                uk=ik*ro/(6.28*lt)
+                
+                
+                //-------------------------------------------
+                // Ecuacion de tensiones tolerables                
+                cs=1-0.09*(1-(ro/rs))/(2*e+0.09);
+                eca=(1000+1.5*cs*rs)*(0.157/(Math.sqrt(tk)));
+                //-------------------------------------------
+                
+                //-------------------------------------------
+                //calcula suma de aportes de potencial
+                for(m=0;m<a;m++){
+                    for(n=0;n<l;n++){
+                        for(x=0;x<cv;x++){
+                            ux=ux+uk*Math.log((Math.sqrt((n-xv[x])*(n-xv[x])))+r);
+                        }
+                        
+                        for(y=0;y<ch;y++){
+                            uy=uy+uk*Math.log((Math.sqrt((m-yh[y])*(m-yh[y])))+r);
+                        }
+                        
+                        u=ux+uy;
+                    
+                        if(u>eca){
+                            ctx.fillStyle="red";
+                        }
+                
+                        if(u<eca){
+                            if(u>eca*0.8){
+                                ctx.fillStyle="orange";
+                            }
+                        }
+                
+                        if(u<eca*0.8){
+                            if(u>eca*0.6){
+                                ctx.fillStyle="yellow";
+                            }
+                        }
+                
+                        if(u<eca*0.6){
+                            if(u>eca*0.4){
+                                ctx.fillStyle="blue";
+                            }
+                        }
+                
+                        if(u<eca*0.4){
+                            if(u>eca*0.2){
+                                ctx.fillStyle="violet";
+                            }
+                        }
+                
+                        if(u<eca*0.2){
+                            if(u>0){
+                                ctx.fillStyle="green";
+                            }
+                        }
+                        
+                        ctx.fillRect(100+n*w,100+m*w,w-1,w-1);
+                        
+                        ux=0;
+                        uy=0;
+                    }
+
+                }
+            }
+        </script>
+    </body>
+</html>
